@@ -223,7 +223,7 @@ describe(PersonService.name, () => {
 
       const auth = factory.auth({ user: user1 });
 
-      await sut.mergePerson(auth, person1.personGroupId, { ids: [person2.personGroupId] });
+      await sut.mergePeople(auth, { ids: [person1.personGroupId, person2.personGroupId] });
       const user1People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user1.id }));
       const user2People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user2.id }));
       expect(user1People).toEqual([expect.objectContaining({ personGroupId: person1.personGroupId })]);
@@ -254,7 +254,7 @@ describe(PersonService.name, () => {
 
       const auth = factory.auth({ user: user1 });
 
-      await sut.mergePerson(auth, person1.personGroupId, { ids: [person2.personGroupId] });
+      await sut.mergePeople(auth, { ids: [person1.personGroupId, person2.personGroupId] });
       const user1People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user1.id }));
       const user2People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user2.id }));
       expect(user1People).toEqual([expect.objectContaining({ personGroupId: person1.personGroupId })]);
@@ -266,7 +266,7 @@ describe(PersonService.name, () => {
       );
     });
 
-    it('should skip people with a different birthdate', async () => {
+    it('should skip people with a different birth date', async () => {
       const { sut, ctx } = setup();
       const storageMock = ctx.getMock(StorageRepository);
       const { user: user1 } = await ctx.newUser();
@@ -287,7 +287,7 @@ describe(PersonService.name, () => {
 
       const auth = factory.auth({ user: user1 });
 
-      await sut.mergePerson(auth, person1.personGroupId, { ids: [person2.personGroupId] });
+      await sut.mergePeople(auth, { ids: [person1.personGroupId, person2.personGroupId] });
       const user1People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user1.id }));
       const user2People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user2.id }));
       expect(user1People).toEqual([expect.objectContaining({ personGroupId: person1.personGroupId })]);
@@ -316,13 +316,28 @@ describe(PersonService.name, () => {
 
       const auth = factory.auth({ user: user1 });
 
-      await sut.mergePerson(auth, person1.personGroupId, { ids: [person2.personGroupId] });
+      await sut.mergePeople(auth, { ids: [person1.personGroupId, person2.personGroupId] });
       const user1People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user1.id }));
       const user2People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user2.id }));
       expect(user1People).toEqual([expect.objectContaining({ personGroupId: person1.personGroupId })]);
       expect(user2People).toEqual([expect.objectContaining({ personGroupId: person2.personGroupId })]);
       await expect(ctx.get(PersonRepository).getFaces(asset.id, { viewingUserId: asset.ownerId })).resolves.toEqual([
         expect.objectContaining({ personGroupId: person2.personGroupId }),
+      ]);
+    });
+
+    it('should collapse names in order for auth user', async () => {
+      const { sut, ctx } = setup();
+      const { user } = await ctx.newUser();
+      const { person: person1 } = await ctx.newPerson({ ownerId: user.id, name: 'Person 1' });
+      const { person: person2 } = await ctx.newPerson({ ownerId: user.id, name: 'Person 2' });
+
+      const auth = factory.auth({ user });
+
+      await sut.mergePeople(auth, { ids: [person1.personGroupId, person2.personGroupId] });
+      const user1People = await Array.fromAsync(ctx.get(PersonRepository).getAll({ ownerId: user.id }));
+      expect(user1People).toEqual([
+        expect.objectContaining({ personGroupId: person1.personGroupId, name: 'Person 2' }),
       ]);
     });
   });
